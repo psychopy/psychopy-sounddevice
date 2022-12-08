@@ -1,6 +1,6 @@
 # psychopy-sounddevice
 
-Audio playback backend using [SoundDevice](https://python-sounddevice.readthedocs.io).
+Audio playback backend using the [SoundDevice](https://python-sounddevice.readthedocs.io) library.
 
 ## Installing
 
