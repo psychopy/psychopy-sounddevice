@@ -117,11 +117,15 @@ class _StreamsDict(dict):
         for thisFormat in self:
             if simil.match(thisFormat):  # we found a close-enough match
                 return thisFormat, self[thisFormat]
-        # if we've been given values in each place then create stream
-        if (sampleRate not in [None, -1, 0] and
-                    channels not in [None, -1] and
-                    blockSize not in [None, -1]):
-            return self._getStream(sampleRate, channels, blockSize)
+        # no compatible stream found, create new stream replacing flexible values with defaults
+        if channels in [None, -1]:
+            channels = 2
+        if sampleRate in [None, -1, 0]:
+            sampleRate = 44100
+        if blockSize in [None, -1]:
+            blockSize = 128
+        return self._getStream(sampleRate, channels, blockSize)
+
 
     def _getStream(self, sampleRate, channels, blockSize):
         """Strict check for this format or create new
