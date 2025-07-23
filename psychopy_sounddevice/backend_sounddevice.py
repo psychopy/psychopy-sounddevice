@@ -413,6 +413,12 @@ class SoundDeviceSound(_SoundBase):
                                                 sampleRate=self.sampleRate)
 
     def _setSndFromClip(self, clip):
+        if self.channels == -1:
+            if self.stereo == 0:
+                self.channels = 1
+            elif self.stereo == 1:
+                self.channels = 2
+
         thisArray = clip.samples
 
         self.sndArr = np.asarray(thisArray)
@@ -443,6 +449,8 @@ class SoundDeviceSound(_SoundBase):
         self._nSamples = thisArray.shape[0]
         if self.stopTime == -1:
             self.duration = self._nSamples/float(self.sampleRate)
+        else:
+            self.duration = self.secs
         # set to run from the start:
         self.seek(0)
         self.sourceType = "array"
@@ -586,7 +594,7 @@ class SoundDeviceSound(_SoundBase):
         self._setSndFromClip(clip)
 
 
-if not hasattr(SoundDeviceSound, "_setSoundFromArray"):
+if not hasattr(SoundDeviceSound, "_setSndFromArray"):
     SoundDeviceSound._setSndFromArray = SoundDeviceSound._setSndFromArrayLegacy
 
 
