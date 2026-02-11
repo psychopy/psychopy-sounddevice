@@ -36,3 +36,6 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["",]
+
+[project.entry-points."psychopy.sound"]
+backend_sounddevice = "psychopy_sounddevice.backend_sounddevice"

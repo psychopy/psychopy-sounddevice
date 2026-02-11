@@ -263,6 +263,7 @@ class SoundDeviceSound(_SoundBase):
     """
 
     def __init__(self, value="C", secs=0.5, octave=4, stereo=-1,
+                 speaker=None,
                  volume=1.0, loops=0,
                  sampleRate=None, blockSize=128,
                  preBuffer=-1,
@@ -296,6 +297,7 @@ class SoundDeviceSound(_SoundBase):
         :param autoLog: whether to automatically log every change
         """
         self.sound = value
+        self.speaker = speaker
         self.name = name
         self.secs = secs  # for any synthesised sounds (notesand freqs)
         self.octave = octave  # for note name sounds
@@ -414,50 +416,14 @@ class SoundDeviceSound(_SoundBase):
                                                 soundSecs=self.secs,
                                                 sampleRate=self.sampleRate)
 
-    def _setSndFromFile(self, filename):
-        self.sndFile = f = sf.SoundFile(filename)
-        self.sourceType = 'file'
-        self.sampleRate = f.samplerate
-        if self.channels == -1:  # if channels was auto then set to file val
-            self.channels = f.channels
-        fileDuration = float(len(f))/f.samplerate  # needed for duration?
-        # process start time
-        if self.startTime and self.startTime > 0:
-            startFrame = self.startTime * self.sampleRate
-            self.sndFile.seek(int(startFrame))
-            self.t = self.startTime
-        else:
-            self.t = 0
-        # process stop time
-        if self.stopTime and self.stopTime > 0:
-            requestedDur = self.stopTime - self.t
-            self.duration = min(requestedDur, fileDuration)
-        else:
-            self.duration = fileDuration - self.t
-        # can now calculate duration in frames
-        self.durationFrames = int(round(self.duration * self.sampleRate))
-        # are we preloading or streaming?
-        if self.preBuffer == 0:
-            # no buffer - stream from disk on each call to nextBlock
-            pass
-        elif self.preBuffer == -1:
-            # full pre-buffer. Load requested duration to memory
-            sndArr = self.sndFile.read(
-                frames=int(self.sampleRate * self.duration))
-            self.sndFile.close()
-            self._setSndFromArray(sndArr)
-        self._channelCheck(self.sndArr)  # Check for fewer channels in stream vs data array
+    def _setSndFromClip(self, clip):
+        if self.channels == -1:
+            if self.stereo == 0:
+                self.channels = 1
+            elif self.stereo == 1:
+                self.channels = 2
 
-    def _setSndFromFreq(self, thisFreq, secs, hamming=True):
-        self.freq = thisFreq
-        self.secs = secs
-        self.sourceType = 'freq'
-        self.t = 0
-        self.duration = self.secs
-        if self.stereo == -1:
-            self.stereo = 0
-
-    def _setSndFromArray(self, thisArray):
+        thisArray = clip.samples
 
         self.sndArr = np.asarray(thisArray)
         if thisArray.ndim == 1:
@@ -487,6 +453,8 @@ class SoundDeviceSound(_SoundBase):
         self._nSamples = thisArray.shape[0]
         if self.stopTime == -1:
             self.duration = self._nSamples/float(self.sampleRate)
+        else:
+            self.duration = self.secs
         # set to run from the start:
         self.seek(0)
         self.sourceType = "array"
@@ -619,6 +587,19 @@ class SoundDeviceSound(_SoundBase):
         will be played
         """
         return streams[self.streamLabel]
+    
+        
+    def _setSndFromArrayLegacy(self, thisArray):
+        """
+        Prior to 2025.1.0, _SoundBase didn't have a `_setSndFromArray` method to inherit. This legacy method can be substituted in if the version of PsychoPy installed is too old.
+        """
+        from psychopy.sound.audioclip import AudioClip
+        clip = AudioClip(thisArray, sampleRateHz=self.sampleRate)
+        self._setSndFromClip(clip)
+
+
+if not hasattr(SoundDeviceSound, "_setSndFromArray"):
+    SoundDeviceSound._setSndFromArray = SoundDeviceSound._setSndFromArrayLegacy
 
 
 if __name__ == "__main__":
